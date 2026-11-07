@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#151b16"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="FieldMed">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192.png">
+<title>FieldMed | Patient Records</title>
+<style>
+:root{--bg:#0e130f;--panel:#171f19;--panel2:#202a22;--line:#344237;--text:#e8eee8;--muted:#9ba99d;--green:#a7c58a;--accent:#c4d7a5;--red:#e28b7e;--amber:#d9b875}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+header{position:sticky;top:0;z-index:5;background:#151b16ee;backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:14px 16px 12px}
+.brand{display:flex;align-items:center;gap:10px}.mark{width:35px;height:35px;border:1px solid #64765d;border-radius:9px;display:grid;place-items:center;color:var(--green);font-weight:800;font-size:18px}.brand strong{letter-spacing:1.6px;font-size:14px}.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:2px;margin-top:2px}
+main{max-width:760px;margin:auto;padding:16px 14px 100px}.topline{display:flex;justify-content:space-between;align-items:center;margin:5px 0 15px}.eyebrow{color:var(--green);font-size:10px;letter-spacing:2px;font-weight:800}.muted{color:var(--muted)}h1{font-size:24px;margin:5px 0 0}h2{font-size:16px;margin:0 0 13px}.card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:15px;margin:12px 0}.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+label{display:block;color:#b7c3b8;font-size:11px;font-weight:700;letter-spacing:.4px;margin:0 0 6px}input,select,textarea{width:100%;border:1px solid #3a493d;background:#0f1611;color:var(--text);border-radius:8px;padding:11px 10px;font:14px inherit;outline:none}input:focus,select:focus,textarea:focus{border-color:var(--green)}textarea{min-height:78px;resize:vertical} .field{margin-bottom:11px}
+button{border:1px solid #53664f;background:#29382b;color:var(--text);border-radius:9px;padding:11px 13px;font-weight:700;font-size:13px;cursor:pointer}button.primary{background:#9dbb80;color:#10170f;border-color:#9dbb80}button.ghost{background:transparent;border-color:var(--line)}button.danger{border-color:#75463f;color:#f0a69a;background:#2b1917}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions button{flex:1}
+.tabs{display:flex;gap:7px;overflow:auto;padding:2px 0 10px}.tab{white-space:nowrap;padding:9px 12px;font-size:12px}.tab.active{background:#9dbb80;color:#10170f;border-color:#9dbb80}
+.patient{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}.patient:last-child{border:0}.patient button{flex:0 0 auto}.patient b{display:block}.patient small{color:var(--muted)}
+.hidden{display:none!important}.status{font-size:11px;color:var(--green)}.note{font-size:12px;color:var(--muted);line-height:1.5}.section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.pill{border:1px solid #53664f;color:var(--green);padding:4px 8px;border-radius:99px;font-size:10px}
+#lockscreen{max-width:420px;margin:12vh auto;padding:18px}.brandbig{font-size:22px;letter-spacing:2px}.warning{border-left:3px solid var(--amber);padding:9px 11px;background:#282318;color:#d9c99f;font-size:12px;line-height:1.5;border-radius:4px}
+footer{position:fixed;bottom:0;left:0;right:0;background:#111812ee;border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom));display:flex;justify-content:center;z-index:6}footer button{max-width:730px;width:100%}
+@media(min-width:600px){main{padding-left:22px;padding-right:22px}.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+</style></head>
+<body>
+<div id="lockscreen" class="card">
+<div class="brand"><div class="mark">+</div><div><div class="brandbig">FIELDMED</div><small>OFFLINE PATIENT RECORDS</small></div></div>
+<h2 style="margin-top:25px">Secure local access</h2>
+<p class="note">Create a passphrase to encrypt records on this device, or enter your existing passphrase to unlock them.</p>
+<div class="field"><label>DEVICE PASSPHRASE</label><input id="pass" type="password" autocomplete="current-password" placeholder="Use a strong passphrase"></div>
+<div class="actions"><button class="primary" id="unlock">Unlock / Create vault</button></div>
+<p id="lockmsg" class="note"></p>
+<div class="warning" style="margin-top:16px">This is a personal documentation tool, not a validated EHR or substitute for approved clinical protocols. Do not enter real patient-identifying information unless your organization authorizes this device and storage method. Protect the device and passphrase.</div>
+</div>
+<div id="app" class="hidden">
+<header><div class="brand"><div class="mark">+</div><div><strong>FIELDMED</strong><small>TACTICAL PATIENT DOCUMENTATION</small></div><div style="margin-left:auto" class="pill">LOCAL / ENCRYPTED</div></div></header>
+<main>
+<div id="home">
+<div class="topline"><div><div class="eyebrow">FIELD OPERATIONS / RECORDS</div><h1>Patient Log</h1></div><button class="primary" id="new">＋ New patient</button></div>
+<div class="card"><div class="section-title"><h2>Saved patient records</h2><span class="status" id="count">0 RECORDS</span></div><div id="patientlist"><p class="note">No records yet. Create a patient record to begin.</p></div></div>
+<div class="card"><h2>Vault & data</h2><div class="actions"><button id="backup">Export encrypted backup</button><button id="restore">Import backup</button><button class="ghost" id="lock">Lock vault</button></div><p class="note">Records are encrypted in local browser storage. Export backups regularly. Clearing website data or removing the app may erase records.</p><input type="file" id="backupfile" accept=".json,application/json" class="hidden"></div>
+</div>
+<div id="editor" class="hidden">
+<div class="topline"><div><div class="eyebrow">PATIENT ENCOUNTER</div><h1 id="formtitle">New patient</h1></div><button class="ghost" id="back">← Records</button></div>
+<div class="tabs" id="tabs">
+<button class="tab active" data-tab="identity">Identity</button><button class="tab" data-tab="assessment">Assessment</button><button class="tab" data-tab="vitals">Vitals</button><button class="tab" data-tab="history">History</button><button class="tab" data-tab="treatment">Treatment</button><button class="tab" data-tab="notes">Notes</button>
+</div>
+<form id="recordform">
+<section class="tabpage" data-page="identity">
+<div class="card"><h2>Patient identification</h2><div class="grid"><div class="field"><label>NAME / IDENTIFIER</label><input name="name" placeholder="Name or operational identifier"></div><div class="field"><label>DATE OF BIRTH</label><input name="dob" type="date"></div><div class="field"><label>SEX</label><select name="sex"><option value="">Select</option><option>Female</option><option>Male</option><option>Other / not recorded</option></select></div><div class="field"><label>RECORD / CASE ID</label><input name="caseid" placeholder="Optional"></div><div class="field"><label>ENCOUNTER DATE</label><input name="date" type="datetime-local"></div><div class="field"><label>LOCATION / GRID / SITE</label><input name="location" placeholder="Optional"></div></div><div class="field"><label>CHIEF COMPLAINT</label><textarea name="complaint" placeholder="Primary reason for encounter"></textarea></div></div>
+</section>
+<section class="tabpage hidden" data-page="assessment">
+<div class="card"><h2>Primary survey — MARCH</h2><div class="field"><label>M — MASSIVE HEMORRHAGE</label><textarea name="march_m" placeholder="Findings, bleeding control, tourniquet details"></textarea></div><div class="field"><label>A — AIRWAY</label><textarea name="march_a" placeholder="Patency, adjuncts, interventions"></textarea></div><div class="field"><label>R — RESPIRATION</label><textarea name="march_r" placeholder="Chest assessment, work of breathing, interventions"></textarea></div><div class="field"><label>C — CIRCULATION</label><textarea name="march_c" placeholder="Pulses, perfusion, shock indicators"></textarea></div><div class="field"><label>H — HYPOTHERMIA / HEAD INJURY</label><textarea name="march_h" placeholder="Temperature management, neuro findings"></textarea></div></div>
+<div class="card"><h2>Secondary assessment</h2><div class="field"><label>HEAD-TO-TOE / DCAP-BTLS</label><textarea name="secondary" placeholder="Document findings by body region"></textarea></div><div class="field"><label>NEUROLOGICAL / GCS</label><input name="neuro" placeholder="GCS E__ V__ M__ ; pupils; motor/sensory"></div><div class="field"><label>PAIN SCORE / FUNCTIONAL IMPACT</label><input name="pain" placeholder="Score and effect on function"></div><div class="field"><label>WORKING IMPRESSION</label><textarea name="impression"></textarea></div></div>
+</section>
+<section class="tabpage hidden" data-page="vitals">
+<div class="card"><h2>Vitals</h2><div class="grid3"><div class="field"><label>BP (mmHg)</label><input name="bp" placeholder="120/80"></div><div class="field"><label>HR (bpm)</label><input name="hr" inputmode="numeric"></div><div class="field"><label>RR (/min)</label><input name="rr" inputmode="numeric"></div><div class="field"><label>SpO₂ (%)</label><input name="spo2" inputmode="numeric"></div><div class="field"><label>TEMP</label><input name="temp" placeholder="°C / °F"></div><div class="field"><label>GLUCOSE</label><input name="glucose"></div><div class="field"><label>GCS</label><input name="gcs"></div><div class="field"><label>ETCO₂</label><input name="etco2"></div><div class="field"><label>PAIN</label><input name="v pain"></div></div><div class="field"><label>VITALS TIME / POSITION / CONTEXT</label><input name="vtime" placeholder="Time, position, oxygen/support in use"></div><div class="field"><label>VITALS NOTES</label><textarea name="vnotes"></textarea></div><button type="button" id="addvital">＋ Add timed vitals set</button><div id="vitalhistory" class="note" style="margin-top:10px"></div></div>
+</section>
+<section class="tabpage hidden" data-page="history">
+<div class="card"><h2>Patient history — SAMPLE</h2><div class="field"><label>S — SIGNS / SYMPTOMS</label><textarea name="sample_s"></textarea></div><div class="field"><label>A — ALLERGIES</label><textarea name="allergies" placeholder="Include reaction, or unknown"></textarea></div><div class="field"><label>M — MEDICATIONS</label><textarea name="medications" placeholder="Current medications, dose if known"></textarea></div><div class="field"><label>P — PAST MEDICAL / SURGICAL HISTORY</label><textarea name="pmh"></textarea></div><div class="field"><label>L — LAST ORAL INTAKE</label><textarea name="lastintake"></textarea></div><div class="field"><label>E — EVENTS LEADING TO ILLNESS / INJURY</label><textarea name="events"></textarea></div></div>
+<div class="card"><h2>Symptom history — OPQRST</h2><div class="field"><label>O — ONSET</label><input name="opqrst_o"></div><div class="field"><label>P — PROVOCATION / PALLIATION</label><input name="opqrst_p"></div><div class="field"><label>Q — QUALITY</label><input name="opqrst_q"></div><div class="field"><label>R — REGION / RADIATION</label><input name="opqrst_r"></div><div class="field"><label>S — SEVERITY</label><input name="opqrst_s"></div><div class="field"><label>T — TIME / TREND</label><input name="opqrst_t"></div></div>
+</section>
+<section class="tabpage hidden" data-page="treatment">
+<div class="card"><h2>Interventions & medication administration</h2><div class="field"><label>PROCEDURES / TREATMENTS</label><textarea name="procedures" placeholder="Intervention, time, indication, response"></textarea></div><div class="field"><label>MEDICATION ADMINISTRATION</label><textarea name="medadmin" placeholder="Medication, concentration, dose, route, time, administrator, response"></textarea></div><div class="field"><label>FLUIDS / OXYGEN / SUPPORT</label><textarea name="support"></textarea></div><div class="field"><label>REASSESSMENT / RESPONSE</label><textarea name="response"></textarea></div><div class="field"><label>DISPOSITION / HANDOFF</label><textarea name="disposition" placeholder="Destination, receiving clinician, handoff details, time"></textarea></div></div>
+</section>
+<section class="tabpage hidden" data-page="notes">
+<div class="card"><h2>Clinical narrative</h2><div class="field"><label>CHRONOLOGICAL NOTES</label><textarea name="notes" style="min-height:190px" placeholder="Time-stamped narrative, observations, decisions and patient response"></textarea></div><div class="field"><label>DOCUMENTED BY</label><input name="provider" placeholder="Name / role / identifier"></div><div class="warning">Document objective findings, exact times, units, medication details and patient response. Follow applicable scope, protocols and medical direction.</div></div>
+</section>
+</form>
+<div class="actions"><button class="primary" id="save">Save patient record</button><button class="ghost" id="report">Export report</button></div>
+<button class="danger" id="delete" style="width:100%;margin-top:10px">Delete this record</button>
+</div>
+</main>
+<footer><button class="ghost" id="footerhome">FIELDMED • OFFLINE DOCUMENTATION</button></footer>
+</div>
+<script src="app.js"></script>
+</body></html>

@@ -1,0 +1,35 @@
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+let key=null,records=[],current=null,vitalSets=[];
+const DB='fieldmed-vault-v1', STORE='vault';
+function openDB(){return new Promise((res,rej)=>{let r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(STORE);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function getVault(){let db=await openDB();return new Promise((res,rej)=>{let r=db.transaction(STORE).objectStore(STORE).get('data');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function putVault(v){let db=await openDB();return new Promise((res,rej)=>{let t=db.transaction(STORE,'readwrite');t.objectStore(STORE).put(v,'data');t.oncomplete=res;t.onerror=()=>rej(t.error)})}
+const enc=new TextEncoder(),dec=new TextDecoder();
+async function derive(pass,salt){let m=await crypto.subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:310000,hash:'SHA-256'},m,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b))),un64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function encrypt(data){let iv=crypto.getRandomValues(new Uint8Array(12)),cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(JSON.stringify(data)));return {v:1,iv:b64(iv),cipher:b64(cipher)}}
+async function decrypt(v){let p=await crypto.subtle.decrypt({name:'AES-GCM',iv:un64(v.iv)},key,un64(v.cipher));return JSON.parse(dec.decode(p))}
+async function unlock(){let p=$('#pass').value;if(p.length<10){$('#lockmsg').textContent='Use at least 10 characters.';return}try{let v=await getVault();if(!v){let salt=crypto.getRandomValues(new Uint8Array(16));key=await derive(p,salt);await putVault({salt:b64(salt),data:await encrypt([])});records=[]}else{key=await derive(p,un64(v.salt));records=await decrypt(v.data)}$('#lockscreen').classList.add('hidden');$('#app').classList.remove('hidden');render()}catch(e){key=null;$('#lockmsg').textContent='Could not unlock. Check your passphrase. If it is lost, encrypted records cannot be recovered.'}}
+$('#unlock').onclick=unlock;$('#pass').addEventListener('keydown',e=>{if(e.key==='Enter')unlock()});
+async function persist(){let v=await getVault();await putVault({salt:v.salt,data:await encrypt(records)})}
+function render(){let el=$('#patientlist');$('#count').textContent=records.length+' RECORD'+(records.length===1?'':'S');el.innerHTML='';if(!records.length){el.innerHTML='<p class="note">No records yet. Create a patient record to begin.</p>';return}records.slice().sort((a,b)=>(b.updated||'').localeCompare(a.updated||'')).forEach(r=>{let d=document.createElement('div');d.className='patient';let info=document.createElement('div');let b=document.createElement('b');b.textContent=r.name||'Unnamed patient';let sm=document.createElement('small');sm.textContent=[r.caseid,r.date?new Date(r.date).toLocaleString():''].filter(Boolean).join(' • ');info.append(b,sm);let bt=document.createElement('button');bt.textContent='Open';bt.onclick=()=>edit(r.id);d.append(info,bt);el.append(d)})}
+function showEditor(){ $('#home').classList.add('hidden');$('#editor').classList.remove('hidden')}
+function showHome(){ $('#editor').classList.add('hidden');$('#home').classList.remove('hidden');render()}
+function fresh(){current={id:crypto.randomUUID(),updated:new Date().toISOString()};vitalSets=[];$('#recordform').reset();let dt=$('[name=date]');dt.value=new Date().toISOString().slice(0,16);$('#formtitle').textContent='New patient';$('#vitalhistory').textContent='';showEditor();tab('identity')}
+function edit(id){current=records.find(x=>x.id===id);vitalSets=current.vitalSets||[];$('#recordform').reset();for(let [k,v] of Object.entries(current)){let f=$(`[name="${CSS.escape(k)}"]`);if(f)f.value=v??''}$('#formtitle').textContent=current.name||'Patient record';renderVitals();showEditor();tab('identity')}
+function tab(name){$$('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));$$('.tabpage').forEach(p=>p.classList.toggle('hidden',p.dataset.page!==name))}
+$$('.tab').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+$('#new').onclick=fresh;$('#back').onclick=showHome;$('#footerhome').onclick=()=>{if(!$('#editor').classList.contains('hidden'))showHome()};
+function formData(){let o={...current,vitalSets,updated:new Date().toISOString()};new FormData($('#recordform')).forEach((v,k)=>o[k]=v);return o}
+$('#save').onclick=async()=>{let o=formData();let i=records.findIndex(r=>r.id===o.id);if(i<0)records.push(o);else records[i]=o;current=o;await persist();$('#formtitle').textContent=o.name||'Patient record';alert('Record saved to this device.');showHome()};
+$('#delete').onclick=async()=>{if(!current||!confirm('Permanently delete this patient record?'))return;records=records.filter(r=>r.id!==current.id);await persist();current=null;showHome()};
+function renderVitals(){$('#vitalhistory').innerHTML='';vitalSets.forEach(v=>{let d=document.createElement('div');d.textContent=`${new Date(v.time).toLocaleString()} — BP ${v.bp||'—'} | HR ${v.hr||'—'} | RR ${v.rr||'—'} | SpO₂ ${v.spo2||'—'} | Temp ${v.temp||'—'} | GCS ${v.gcs||'—'}`;$('#vitalhistory').append(d)})}
+$('#addvital').onclick=()=>{let f=formData();vitalSets.push({time:new Date().toISOString(),bp:f.bp,hr:f.hr,rr:f.rr,spo2:f.spo2,temp:f.temp,glucose:f.glucose,gcs:f.gcs,etco2:f.etco2,notes:f.vnotes});renderVitals()};
+function reportText(r){let lines=['FIELDMED — PATIENT CARE RECORD','Generated: '+new Date().toLocaleString(),''];for(let [k,v] of Object.entries(r)){if(['id','updated','vitalSets'].includes(k)||!v)continue;lines.push(k.toUpperCase().replaceAll('_',' ')+':',String(v),'')}if(r.vitalSets?.length){lines.push('TIMED VITALS');r.vitalSets.forEach(v=>lines.push(JSON.stringify(v)))}return lines.join('\n')}
+function download(name,content,type){let a=document.createElement('a'),u=URL.createObjectURL(new Blob([content],{type}));a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+$('#report').onclick=()=>{if(!current)return;download('FieldMed-'+(current.caseid||current.id)+'.txt',reportText(formData()),'text/plain')};
+$('#backup').onclick=async()=>{let v=await getVault();download('fieldmed-encrypted-backup.json',JSON.stringify(v),'application/json')};
+$('#restore').onclick=()=>$('#backupfile').click();
+$('#backupfile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let v=JSON.parse(await f.text());let test=await decrypt(v.data);if(!Array.isArray(test))throw Error();await putVault(v);records=test;render();alert('Backup imported.')}catch(err){alert('Backup could not be imported with the current passphrase or file format.')}e.target.value=''};
+$('#lock').onclick=()=>{key=null;records=[];current=null;$('#app').classList.add('hidden');$('#lockscreen').classList.remove('hidden');$('#pass').value='';$('#lockmsg').textContent='Vault locked.'};
+if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
